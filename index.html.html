@@ -1,0 +1,476 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Hidratação nos Alimentos — Jogo Interativo</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg: #ffffff;
+      --bg2: #f5f5f3;
+      --bg3: #ededea;
+      --text: #1a1a18;
+      --text2: #6b6b67;
+      --border: rgba(0,0,0,0.12);
+      --border2: rgba(0,0,0,0.22);
+      --radius-md: 8px;
+      --radius-lg: 12px;
+    }
+
+    @media (prefers-color-scheme: dark) {
+      :root {
+        --bg: #1c1c1a;
+        --bg2: #252523;
+        --bg3: #2e2e2b;
+        --text: #f0f0ec;
+        --text2: #9a9a94;
+        --border: rgba(255,255,255,0.12);
+        --border2: rgba(255,255,255,0.22);
+      }
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: var(--bg3);
+      color: var(--text);
+      min-height: 100vh;
+      display: flex;
+      align-items: flex-start;
+      justify-content: center;
+      padding: 2rem 1rem 4rem;
+    }
+
+    .page {
+      width: 100%;
+      max-width: 520px;
+    }
+
+    .header {
+      text-align: center;
+      margin-bottom: 1.75rem;
+    }
+
+    .header h1 {
+      font-size: 22px;
+      font-weight: 500;
+      color: var(--text);
+      margin-bottom: 6px;
+    }
+
+    .header p {
+      font-size: 14px;
+      color: var(--text2);
+      line-height: 1.5;
+    }
+
+    .card {
+      background: var(--bg);
+      border: 0.5px solid var(--border);
+      border-radius: var(--radius-lg);
+      padding: 1.25rem;
+    }
+
+    .top-bar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 1rem;
+    }
+
+    .top-bar-label {
+      font-size: 14px;
+      font-weight: 500;
+      color: var(--text);
+    }
+
+    .score-box { display: flex; gap: 10px; }
+
+    .score-pill {
+      background: var(--bg2);
+      border-radius: var(--radius-md);
+      padding: 5px 12px;
+      font-size: 13px;
+      color: var(--text2);
+    }
+
+    .score-pill span { font-weight: 500; color: var(--text); }
+
+    .progress-bar {
+      height: 5px;
+      background: var(--bg2);
+      border-radius: 3px;
+      margin-bottom: 1.25rem;
+      overflow: hidden;
+    }
+
+    .progress-fill {
+      height: 5px;
+      background: #1D9E75;
+      border-radius: 3px;
+      transition: width 0.4s ease;
+    }
+
+    .question-label {
+      font-size: 12px;
+      color: var(--text2);
+      margin-bottom: 8px;
+    }
+
+    .food-card-big {
+      background: var(--bg);
+      border: 2px solid var(--border2);
+      border-radius: var(--radius-lg);
+      padding: 22px 16px;
+      text-align: center;
+      margin-bottom: 1.25rem;
+      cursor: grab;
+      user-select: none;
+      transition: opacity 0.3s, transform 0.2s;
+    }
+
+    .food-icon { font-size: 52px; line-height: 1; margin-bottom: 10px; }
+
+    .food-label {
+      font-size: 19px;
+      font-weight: 500;
+      color: var(--text);
+    }
+
+    .food-hint {
+      font-size: 12px;
+      color: var(--text2);
+      margin-top: 5px;
+    }
+
+    .zones-title {
+      font-size: 11px;
+      font-weight: 500;
+      color: var(--text2);
+      letter-spacing: .05em;
+      text-transform: uppercase;
+      margin-bottom: 8px;
+    }
+
+    .zones {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 8px;
+      margin-bottom: 1.25rem;
+    }
+
+    .zone {
+      border-radius: var(--radius-lg);
+      padding: 12px 6px;
+      text-align: center;
+      cursor: pointer;
+      border: 2px dashed transparent;
+      transition: transform 0.15s, border-color 0.15s;
+      min-height: 82px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 3px;
+    }
+
+    .zone:hover { transform: scale(1.04); }
+    .zone.drag-over { transform: scale(1.06); border-style: solid; }
+
+    .zone-pct { font-size: 18px; font-weight: 500; }
+    .zone-lbl { font-size: 11px; font-weight: 500; }
+    .zone-sub { font-size: 10px; opacity: .7; }
+
+    .zone-a { background: #E1F5EE; border-color: #9FE1CB; }
+    .zone-a .zone-pct { color: #085041; }
+    .zone-a .zone-lbl { color: #0F6E56; }
+
+    .zone-b { background: #E6F1FB; border-color: #B5D4F4; }
+    .zone-b .zone-pct { color: #0C447C; }
+    .zone-b .zone-lbl { color: #185FA5; }
+
+    .zone-c { background: #FAEEDA; border-color: #FAC775; }
+    .zone-c .zone-pct { color: #633806; }
+    .zone-c .zone-lbl { color: #854F0B; }
+
+    .zone-d { background: #FCEBEB; border-color: #F7C1C1; }
+    .zone-d .zone-pct { color: #791F1F; }
+    .zone-d .zone-lbl { color: #A32D2D; }
+
+    .feedback {
+      border-radius: var(--radius-lg);
+      padding: 13px 15px;
+      margin-bottom: 1rem;
+      font-size: 14px;
+      line-height: 1.55;
+      display: none;
+    }
+
+    .feedback.show { display: block; }
+    .feedback.ok { background: #E1F5EE; color: #085041; }
+    .feedback.err { background: #FCEBEB; color: #791F1F; }
+
+    .btn-next {
+      width: 100%;
+      padding: 13px;
+      font-size: 15px;
+      font-weight: 500;
+      border-radius: var(--radius-lg);
+      border: none;
+      cursor: pointer;
+      display: none;
+      transition: opacity 0.2s;
+    }
+
+    .btn-next:hover { opacity: 0.88; }
+    .btn-next.show { display: block; }
+    .btn-next.ok { background: #1D9E75; color: #fff; }
+    .btn-next.err { background: #E24B4A; color: #fff; }
+
+    .result-screen { display: none; text-align: center; padding: 2rem 1rem 1rem; }
+    .result-screen.show { display: block; }
+
+    .result-big {
+      font-size: 56px;
+      font-weight: 500;
+      color: #1D9E75;
+      line-height: 1;
+    }
+
+    .result-label {
+      font-size: 16px;
+      color: var(--text2);
+      margin-top: 8px;
+      margin-bottom: 1.5rem;
+    }
+
+    .result-medals {
+      display: flex;
+      justify-content: center;
+      gap: 10px;
+      margin-bottom: 1.25rem;
+      flex-wrap: wrap;
+    }
+
+    .medal {
+      padding: 6px 16px;
+      border-radius: 20px;
+      font-size: 13px;
+      font-weight: 500;
+    }
+
+    .medal-gold { background: #FAEEDA; color: #633806; }
+    .medal-silver { background: #F1EFE8; color: #444441; }
+    .medal-bronze { background: #FAECE7; color: #712B13; }
+
+    .result-review {
+      font-size: 13px;
+      color: var(--text2);
+      margin-bottom: 1.5rem;
+      line-height: 1.5;
+    }
+
+    .btn-restart {
+      background: var(--bg2);
+      border: 0.5px solid var(--border2);
+      border-radius: var(--radius-lg);
+      padding: 11px 28px;
+      font-size: 14px;
+      cursor: pointer;
+      color: var(--text);
+      transition: opacity 0.2s;
+    }
+
+    .btn-restart:hover { opacity: 0.75; }
+
+    .drag-source { opacity: 0.45; transform: scale(0.97); }
+
+    @media (max-width: 400px) {
+      .zones { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+      .zone-pct { font-size: 16px; }
+    }
+  </style>
+</head>
+<body>
+<div class="page">
+
+  <div class="header">
+    <h1>Água nos alimentos</h1>
+    <p>Classifique cada alimento na zona de hidratação correta.<br>Arraste ou toque numa zona para responder.</p>
+  </div>
+
+  <div class="card">
+    <div id="game">
+      <div class="top-bar">
+        <div class="top-bar-label">Classifique o alimento</div>
+        <div class="score-box">
+          <div class="score-pill">Acertos <span id="hits">0</span></div>
+          <div class="score-pill"><span id="qnum">1</span>/10</div>
+        </div>
+      </div>
+      <div class="progress-bar"><div class="progress-fill" id="prog" style="width:0%"></div></div>
+
+      <div class="question-label">Arraste o card ou toque numa zona abaixo</div>
+
+      <div class="food-card-big" id="foodCard" draggable="true">
+        <div class="food-icon" id="foodIcon"></div>
+        <div class="food-label" id="foodName"></div>
+        <div class="food-hint">Arraste ou toque numa zona</div>
+      </div>
+
+      <div class="zones-title">Zonas de hidratação</div>
+      <div class="zones">
+        <div class="zone zone-a" data-zone="a">
+          <div class="zone-pct">+90%</div>
+          <div class="zone-lbl">Excelente</div>
+          <div class="zone-sub">muito hidratante</div>
+        </div>
+        <div class="zone zone-b" data-zone="b">
+          <div class="zone-pct">80–90%</div>
+          <div class="zone-lbl">Ótimo</div>
+          <div class="zone-sub">bem hidratante</div>
+        </div>
+        <div class="zone zone-c" data-zone="c">
+          <div class="zone-pct">60–79%</div>
+          <div class="zone-lbl">Moderado</div>
+          <div class="zone-sub">alguma hidratação</div>
+        </div>
+        <div class="zone zone-d" data-zone="d">
+          <div class="zone-pct">-60%</div>
+          <div class="zone-lbl">Baixo</div>
+          <div class="zone-sub">pouca água</div>
+        </div>
+      </div>
+
+      <div class="feedback" id="feedback"></div>
+      <button class="btn-next" id="btnNext">Próximo alimento →</button>
+    </div>
+
+    <div class="result-screen" id="result">
+      <div class="result-big" id="rScore"></div>
+      <div class="result-label" id="rLabel"></div>
+      <div class="result-medals" id="rMedals"></div>
+      <div class="result-review" id="rReview"></div>
+      <button class="btn-restart" id="btnRestart">Jogar novamente</button>
+    </div>
+  </div>
+
+</div>
+
+<script>
+  const foods = [
+    {n:"Pepino",ic:"🥒",z:"a",pct:96,tip:"Com 96% de água, é o alimento mais hidratante que existe!"},
+    {n:"Melancia",ic:"🍉",z:"a",pct:92,tip:"92% de água e ainda tem potássio — hidrata de verdade."},
+    {n:"Alface",ic:"🥬",z:"a",pct:95,tip:"Folhas verdes chegam a 95% de água. Salada também hidrata!"},
+    {n:"Tomate",ic:"🍅",z:"a",pct:94,tip:"94% de água e rico em licopeno. Aliado duplo da saúde."},
+    {n:"Morango",ic:"🍓",z:"a",pct:91,tip:"91% de água e rico em vitamina C. Lanche perfeito!"},
+    {n:"Abobrinha",ic:"🥒",z:"a",pct:95,tip:"95% de água. Uma das verduras mais hidratantes da cozinha."},
+    {n:"Laranja",ic:"🍊",z:"b",pct:87,tip:"87% de água e vitamina C. Perfeita para o lanche da manhã."},
+    {n:"Iogurte natural",ic:"🫙",z:"b",pct:88,tip:"88% de água e probióticos. Hidrata e cuida do intestino."},
+    {n:"Leite",ic:"🥛",z:"b",pct:87,tip:"87% de água, cálcio e proteína. Uma combinação poderosa."},
+    {n:"Cenoura",ic:"🥕",z:"b",pct:88,tip:"88% de água. Crocante, hidratante e rica em betacaroteno."},
+    {n:"Beterraba",ic:"🫀",z:"b",pct:87,tip:"87% de água e nitratos naturais que melhoram o desempenho físico."},
+    {n:"Maçã",ic:"🍎",z:"b",pct:86,tip:"86% de água. A maçã é uma fruta bem hidratante e prática."},
+    {n:"Frango cozido",ic:"🍗",z:"c",pct:65,tip:"65% de água. Carnes cozidas hidratam mais do que parece."},
+    {n:"Queijo minas",ic:"🧀",z:"c",pct:68,tip:"68% de água. Laticínios frescos contribuem para a hidratação."},
+    {n:"Arroz cozido",ic:"🍚",z:"c",pct:68,tip:"O cozimento absorve água — arroz cozido tem 68% de água!"},
+    {n:"Feijão cozido",ic:"🫘",z:"c",pct:63,tip:"63% de água após o cozimento. Mais hidratante do que parece."},
+    {n:"Ovo cozido",ic:"🥚",z:"c",pct:75,tip:"75% de água. Rico em proteína e ainda contribui para hidratação."},
+    {n:"Pão de forma",ic:"🍞",z:"d",pct:35,tip:"35% de água. Alimentos secos têm baixa contribuição hídrica."},
+    {n:"Biscoito salgado",ic:"🧂",z:"d",pct:5,tip:"Apenas 5% de água e ainda aumenta a sede pelo sal. Cuidado!"},
+    {n:"Chocolate ao leite",ic:"🍫",z:"d",pct:1,tip:"Menos de 1% de água. Não contribui para hidratação."},
+    {n:"Castanha-do-pará",ic:"🌰",z:"d",pct:3,tip:"3% de água. Oleaginosas têm teor de água muito baixo."},
+    {n:"Manteiga",ic:"🧈",z:"d",pct:15,tip:"15% de água. Gorduras concentradas não hidratam o organismo."},
+  ];
+
+  foods.sort(() => Math.random() - .5);
+  const questions = foods.slice(0, 10);
+  let qi = 0, hits = 0, answered = false;
+  const wrongLog = [];
+
+  function load() {
+    const f = questions[qi];
+    document.getElementById("foodIcon").textContent = f.ic;
+    document.getElementById("foodName").textContent = f.n;
+    document.getElementById("qnum").textContent = qi + 1;
+    document.getElementById("prog").style.width = (qi / 10 * 100) + "%";
+    document.getElementById("feedback").className = "feedback";
+    document.getElementById("feedback").textContent = "";
+    document.getElementById("btnNext").className = "btn-next";
+    answered = false;
+    document.getElementById("foodCard").style.opacity = "1";
+    document.getElementById("foodCard").style.transform = "";
+  }
+
+  function answer(zone) {
+    if (answered) return;
+    answered = true;
+    const f = questions[qi];
+    const ok = zone === f.z;
+    if (ok) hits++;
+    else wrongLog.push(f.n);
+    const fb = document.getElementById("feedback");
+    fb.textContent = ok ? "Correto! " + f.tip : "Ops! " + f.n + " tem " + f.pct + "% de água. " + f.tip;
+    fb.className = "feedback show " + (ok ? "ok" : "err");
+    const btn = document.getElementById("btnNext");
+    btn.className = "btn-next show " + (ok ? "ok" : "err");
+    btn.textContent = qi < 9 ? (ok ? "Próximo alimento →" : "Tentar o próximo →") : "Ver resultado";
+    document.getElementById("foodCard").style.opacity = ok ? "1" : "0.4";
+  }
+
+  document.getElementById("btnNext").addEventListener("click", () => {
+    qi++;
+    if (qi >= 10) showResult();
+    else load();
+  });
+
+  document.getElementById("btnRestart").addEventListener("click", () => {
+    foods.sort(() => Math.random() - .5);
+    questions.splice(0, 10, ...foods.slice(0, 10));
+    qi = 0; hits = 0; wrongLog.length = 0; answered = false;
+    document.getElementById("game").style.display = "block";
+    document.getElementById("result").className = "result-screen";
+    load();
+  });
+
+  function showResult() {
+    document.getElementById("game").style.display = "none";
+    document.getElementById("prog").style.width = "100%";
+    const rs = document.getElementById("result");
+    rs.className = "result-screen show";
+    document.getElementById("rScore").textContent = hits + "/10";
+    const labels = ["Continue estudando!", "Quase lá!", "Bom trabalho!", "Ótimo conhecimento!", "Expert em hidratação!"];
+    const li = hits <= 2 ? 0 : hits <= 4 ? 1 : hits <= 6 ? 2 : hits <= 8 ? 3 : 4;
+    document.getElementById("rLabel").textContent = labels[li];
+    const medals = document.getElementById("rMedals");
+    medals.innerHTML = "";
+    if (hits >= 9) medals.innerHTML += '<span class="medal medal-gold">Ouro — expert!</span>';
+    else if (hits >= 7) medals.innerHTML += '<span class="medal medal-silver">Prata — muito bem!</span>';
+    else if (hits >= 5) medals.innerHTML += '<span class="medal medal-bronze">Bronze — bom esforço!</span>';
+    const rev = document.getElementById("rReview");
+    if (wrongLog.length > 0) rev.textContent = "Erramos: " + wrongLog.join(", ") + ". Vale revisar!";
+    else rev.textContent = "Perfeito! Você acertou tudo!";
+  }
+
+  const card = document.getElementById("foodCard");
+  const zones = document.querySelectorAll(".zone");
+
+  card.addEventListener("dragstart", e => {
+    e.dataTransfer.setData("text", "food");
+    setTimeout(() => card.classList.add("drag-source"), 0);
+  });
+  card.addEventListener("dragend", () => card.classList.remove("drag-source"));
+
+  zones.forEach(z => {
+    z.addEventListener("dragover", e => { e.preventDefault(); z.classList.add("drag-over"); });
+    z.addEventListener("dragleave", () => z.classList.remove("drag-over"));
+    z.addEventListener("drop", e => { e.preventDefault(); z.classList.remove("drag-over"); answer(z.dataset.zone); });
+    z.addEventListener("click", () => answer(z.dataset.zone));
+    z.addEventListener("touchend", e => { e.preventDefault(); answer(z.dataset.zone); });
+  });
+
+  load();
+</script>
+</body>
+</html>
